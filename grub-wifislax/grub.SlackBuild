@@ -1,30 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
-# Copyright 2013, 2016, 2017  Patrick J. Volkerding, Sebeka, Minnesota, USA
-# All rights reserved.
-#
-# Redistribution and use of this script, with or without modification, is
-# permitted provided that the following conditions are met:
-#
-# 1. Redistributions of this script must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
-#  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
-#  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-#  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-#  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-#  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# Modified 2016 by Eric Hameleers <alien@slackware.com> for Slackware Live Edition.
+cd $(dirname $0) ; CWD=$(pwd)
 
 PKGNAM=grub
-VERSION=${VERSION:-$(echo $PKGNAM-*.tar.?z* | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
-BUILD=${BUILD:-5wifislax}
+VERSION=${VERSION:-$(echo $PKGNAM-*.tar.xz | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
+PKGVER=$(echo $VERSION | tr '~' '_')
+BUILD=${BUILD:-3wifislax}
 
 # Automatically determine the architecture we're building on:
 if [ -z "$ARCH" ]; then
@@ -37,7 +18,7 @@ if [ -z "$ARCH" ]; then
   export ARCH
 fi
 
-NUMJOBS=${NUMJOBS:-" -j7 "}
+NUMJOBS=${NUMJOBS:-" -j$(expr $(nproc) + 1) "}
 
 if [ "$ARCH" = "i386" ]; then
   SLKCFLAGS="-O2 -march=i386 -mcpu=i686"
@@ -70,7 +51,9 @@ else
   LIBDIRSUFFIX=""
 fi
 
-CWD=$(pwd)
+# Don't use icecream:
+PATH=$(echo $PATH | sed "s|/usr/libexec/icecc/bin||g" | tr -s : | sed "s/^://g" | sed "s/:$//g")
+
 TMP=${TMP:-/tmp}
 PKG=$TMP/package-$PKGNAM
 
@@ -79,8 +62,8 @@ mkdir -p $TMP $PKG
 
 cd $TMP
 rm -rf $PKGNAM-$VERSION
-tar xvf $CWD/$PKGNAM-$VERSION.tar.?z* || exit 1
-cd $PKGNAM-$VERSION
+tar xvf $CWD/$PKGNAM-$VERSION.tar.xz || exit 1
+cd $PKGNAM-$VERSION || exit 1
 
 chown -R root:root .
 find . \
@@ -89,8 +72,17 @@ find . \
   \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
   -exec chmod 644 {} \;
 
-# Fix security issue when reading username and password:
-zcat $CWD/0001-Fix-CVE-2015-8370-Grub2-user-pass-vulnerability.patch.gz | patch -p1 --verbose || exit 1
+# Use /boot/initrd.gz as a valid initrd name:
+zcat $CWD/initrd_naming.patch | patch -p1 --verbose || exit 1
+
+# Support DejaVuSansMono font (dejavusansmono.pf2) by default:
+zcat $CWD/grub.dejavusansmono.gfxterm.font.diff.gz | patch -p1 --verbose || exit 1
+
+# Fix alignment error with gcc8:
+zcat $CWD/0198-align-struct-efi_variable-better.patch.gz | patch -p1 --verbose || exit 1
+
+# Regenerate build system to fix dependency on outdated automake:
+autoreconf -vif
 
 build_grub() {
   EFI_DO="$*"
@@ -107,7 +99,7 @@ build_grub() {
     $EFI_DO || exit 1
 
   # Build and install:
-  make clean
+  make clean || exit 1
   make $NUMJOBS || make || exit 1
   make install DESTDIR=$PKG || exit 1
 
@@ -144,10 +136,6 @@ rmdir --parents $PKG/etc/bash_completion.d 2>/dev/null
 mkdir -p $PKG/etc/default
 cat $CWD/etc.default.grub > $PKG/etc/default/grub.new
 
-# Install update-grub
-cat $CWD/update-grub > $PKG/usr/sbin/update-grub
-chmod 777 $PKG/usr/sbin/update-grub
-
 # Font menu hack
 cp -rf $CWD/dejavusansmono.pf2 $PKG/usr/share/grub/
 
@@ -159,7 +147,7 @@ cp -rf $CWD/30_os-prober $PKG/etc/grub.d/
 chmod 777 $PKG/etc/grub.d/30_os-prober
 
 # Fix ro to rw filesystem
-sed 's/ ro / rw /g' -i $PKG/etc/grub.d/10_linux
+#sed 's/ ro / rw /g' -i $PKG/etc/grub.d/10_linux
 
 # Removing man files
 if [ -d $PKG/usr/man ]; then
