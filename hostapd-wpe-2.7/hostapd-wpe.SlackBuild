@@ -52,11 +52,11 @@ find -L . \
 CFLAGS+="$SLKCFLAGS" make
 
 mkdir -p \
-  $PKG/usr/bin/ \
+  $PKG/usr/sbin/ \
   $PKG/etc/hostapd-wpe/
 
 cp hostapd-wpe.conf hostapd-wpe.eap_user $PKG/etc/hostapd-wpe/
-cp hostapd-wpe hostapd-wpe_cli $PKG/usr/bin/
+cp hostapd-wpe hostapd-wpe_cli $PKG/usr/sbin/
 cp -rf $TMP/$SRCNAM-$VERSION/$SRCNAM/certs $PKG/etc/hostapd-wpe/
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \

@@ -57,7 +57,7 @@ cat $CWD/hostapd.defconfig > .config
 CFLAGS+="$SLKCFLAGS $(pkg-config --cflags libnl-3.0)" make
 
 mkdir -p \
-  $PKG/usr/bin/ \
+  $PKG/usr/sbin/ \
   $PKG/etc/hostapd \
   $PKG/usr/man/man1 \
   $PKG/usr/man/man8/
@@ -75,7 +75,7 @@ done
 
 gzip -9c hostapd.8 > $PKG/usr/man/man8/hostapd.8.gz
 gzip -9c hostapd_cli.1 > $PKG/usr/man/man1/hostapd_cli.1.gz
-cp hostapd hostapd_cli $PKG/usr/bin/
+cp hostapd hostapd_cli $PKG/usr/sbin/
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true

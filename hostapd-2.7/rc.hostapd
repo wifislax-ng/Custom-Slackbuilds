@@ -6,7 +6,7 @@ hostapd_start() {
   if test -r /var/run/hostapd.pid && ps $(cat /var/run/hostapd.pid) >& /dev/null; then
     echo "HOSTAPD already running!"
   else
-    CMD="/usr/bin/hostapd -B -P /var/run/hostapd.pid /etc/hostapd/hostapd.conf"
+    CMD="/usr/sbin/hostapd -B -P /var/run/hostapd.pid /etc/hostapd/hostapd.conf"
     echo "Starting HOSTAPD:  $CMD"
     $CMD
   fi
