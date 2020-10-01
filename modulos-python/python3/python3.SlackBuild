@@ -1,0 +1,121 @@
+#!/bin/bash
+
+cd $(dirname $0) ; CWD=$(pwd)
+
+PKGNAM=python3
+SRCNAM=Python
+VERSION=$(echo $SRCNAM-*.tar.xz | rev | cut -f 3- -d . | cut -f 1 -d - | rev)
+BRANCH_VERSION=$(echo $VERSION | cut -f 1,2 -d . )
+BUILD=${BUILD:-1wifislax}
+
+NUMJOBS=${NUMJOBS:-" -j$(expr $(nproc) + 1) "}
+
+# Automatically determine the architecture we're building on:
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) export ARCH=i586 ;;
+    arm*) export ARCH=arm ;;
+    # Unless $ARCH is already set, use uname -m for all other archs:
+       *) export ARCH=$( uname -m ) ;;
+  esac
+fi
+
+TMP=${TMP:-/tmp}
+PKG=$TMP/package-$PKGNAM
+rm -rf $PKG
+mkdir -p $TMP $PKG
+
+# Don't set any SLKCFLAGS here, or OPT="$SLKCFLAGS" before the ./configure.
+# Python gets the compile options right without any help.
+if [ "$ARCH" = "i586" ]; then
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "s390" ]; then
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "x86_64" ]; then
+  LIBDIRSUFFIX="64"
+elif [ "$ARCH" = "arm" ]; then
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "armel" ]; then
+  LIBDIRSUFFIX=""
+fi
+
+# Location for Python site-packages:
+SITEPK=$PKG/usr/lib${LIBDIRSUFFIX}/python${BRANCH_VERSION}/site-packages
+# same as above without $PKG
+TOOLSDIR=/usr/lib${LIBDIRSUFFIX}/python${BRANCH_VERSION}/site-packages
+
+cd $TMP
+rm -rf $SRCNAM-$VERSION
+tar xf $CWD/$SRCNAM-$VERSION.tar.xz || exit 1
+cd $SRCNAM-$VERSION || exit 1
+
+zcat $CWD/python3.readline.set_pre_input_hook.diff.gz | patch -p1 --verbose || exit 1
+# We don't want a large libpython*.a.
+zcat $CWD/python3.no-static-library.diff.gz | patch -p1 --verbose || exit 1
+
+if [ "$ARCH" = "x86_64" ]; then
+  # Install to lib64 instead of lib.
+  zcat $CWD/python3.x86_64.diff.gz | patch -p1 --verbose || exit 1
+fi
+
+# Fix python3 path in cgi.py.
+sed -i '1s|^#.*/usr/local/bin/python|#!/usr/bin/python3|' Lib/cgi.py
+
+# If system we're building on already has Python3 with pip in site-packages,
+# ignore it and install pip anyway.
+sed -i 's|\("install",\)|\1 "--ignore-installed",|' Lib/ensurepip/__init__.py
+
+chown -R root:root .
+find -L . \
+ \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
+ \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
+
+./configure \
+  --prefix=/usr \
+  --libdir=/usr/lib${LIBDIRSUFFIX} \
+  --mandir=/usr/man \
+  --docdir=/usr/doc/$PKGNAM-$VERSION \
+  --enable-ipv6 \
+  --enable-shared \
+  --with-system-expat \
+  --with-system-ffi \
+  --enable-loadable-sqlite-extensions \
+  --without-ensurepip \
+  --build=$ARCH-slackware-linux || exit 1
+
+make $NUMJOBS || make || exit 1
+make install DESTDIR=$PKG || exit 1
+
+# Remove to avoid overwriting a copy from Python2.
+rm -f $PKG/usr/bin/2to3
+
+# We'll install the python-tools under site-packages.
+mkdir -p $SITEPK
+cp -a Tools/* $SITEPK
+
+# Remove DOS batch/exe files.
+find $PKG \( -name '*.exe' -o -name '*.bat' \) -exec rm -f '{}' \+
+
+# Fix permissions on dynamic libraries.
+find $PKG -type f -perm 555 -exec chmod 755 '{}' \+
+
+# Fix possible incorrect permissions.
+( cd $PKG
+  find . -type d -exec chmod 755 "{}" \+
+  find . -perm 640 -exec chmod 644 "{}" \+
+  find . -perm 750 -exec chmod 755 "{}" \+
+)
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+find $PKG/usr/man -type f -exec gzip -9 {} \+
+for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+
+cd $PKG
+/sbin/makepkg -l y -c n $TMP/python3-$VERSION-$ARCH-$BUILD.txz
