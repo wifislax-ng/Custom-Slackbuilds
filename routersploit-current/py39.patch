@@ -1,0 +1,23 @@
+From 8c4bc6f79ed678a44ec11dfbcb8f42ace7222ad2 Mon Sep 17 00:00:00 2001
+From: Karthikeyan Singaravelan <tir.karthi@gmail.com>
+Date: Wed, 18 Nov 2020 13:20:21 +0000
+Subject: [PATCH] Use is_alive in favour of isAlive for Python 3.9
+ compatibility.
+
+---
+ routersploit/core/exploit/exploit.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/routersploit/core/exploit/exploit.py b/routersploit/core/exploit/exploit.py
+index 535fd096..683ec5cd 100644
+--- a/routersploit/core/exploit/exploit.py
++++ b/routersploit/core/exploit/exploit.py
+@@ -111,7 +111,7 @@ def run_threads(self, threads_number: int, target_function: any, *args, **kwargs
+ 
+         start = time.time()
+         try:
+-            while thread.isAlive():
++            while thread.is_alive():
+                 thread.join(1)
+ 
+         except KeyboardInterrupt:
