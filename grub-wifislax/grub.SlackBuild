@@ -1,9 +1,32 @@
 #!/bin/bash
 
+# Copyright 2013, 2016, 2017, 2018, 2019  Patrick J. Volkerding, Sebeka, Minnesota, USA
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+#  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+#  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+#  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+#  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+#  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Modified 2016 by Eric Hameleers <alien@slackware.com> for Slackware Live Edition.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PKGNAM=grub
 VERSION=${VERSION:-$(echo $PKGNAM-*.tar.xz | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
+# Better to use _ than ~ in the package filenames version:
 PKGVER=$(echo $VERSION | tr '~' '_')
 BUILD=${BUILD:-3wifislax}
 
@@ -16,6 +39,14 @@ if [ -z "$ARCH" ]; then
     *) ARCH=$(uname -m) ;;
   esac
   export ARCH
+fi
+
+# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
+# the name of the created package would be, and then exit. This information
+# could be useful to other scripts.
+if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
+  echo "$PKGNAM-$PKGVER-$ARCH-$BUILD.txz"
+  exit 0
 fi
 
 NUMJOBS=${NUMJOBS:-" -j$(expr $(nproc) + 1) "}
