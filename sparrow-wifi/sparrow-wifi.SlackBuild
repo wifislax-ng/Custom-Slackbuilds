@@ -2,7 +2,7 @@
 
 PRGNAM=sparrow-wifi
 VERSION=${VERSION:-r170.ad95f2e}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-wifislax}
 
 if [ -z "$ARCH" ]; then
@@ -49,9 +49,12 @@ find -L . \
 
 sed -i 's|service gpsd status|systemctl status gpsd|g' scripts/*.sh
 sed -i 's|service gpsd stop|systemctl stop gpsd|g' scripts/*.sh
+sed -i 's|python|python3|g'  scripts/*.sh
+sed -i 's|sbin/airodump-ng|bin/airodump-ng|g' plugins/*.py
 
 install -Dm644 sparrowwifiagent.cfg.sample "$PKG/opt/sparrow-wifi/sparrowwifiagent.cfg"
 cp -r *.py scripts "$PKG/opt/sparrow-wifi"
+cp -r *.py plugins "$PKG/opt/sparrow-wifi"
 
 python3 -O -m compileall "$PKG/opt/sparrow-wifi"
 
