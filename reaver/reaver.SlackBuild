@@ -2,7 +2,7 @@
 
 PRGNAM=reaver
 VERSION=${VERSION:-1.6.6_2d6e537}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-wifislax}
 
 if [ -z "$ARCH" ]; then

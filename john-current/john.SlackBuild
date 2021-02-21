@@ -1,0 +1,124 @@
+#!/bin/sh
+
+PRGNAM=john
+VERSION=${VERSION:-1.9.0}
+BRANCH=jumbo
+JUMBOVER=1
+BUILD=${BUILD:-2}
+TAG=${TAG:-wifislax}
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/build/$PRGNAM}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+if [ "$ARCH" = "i486" ]; then
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "x86_64" ]; then
+  LIBDIRSUFFIX="64"
+else
+  LIBDIRSUFFIX=""
+fi
+
+set -e
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+cd $TMP
+rm -rf $PRGNAM-$VERSION-$BRANCH-$JUMBOVER
+tar xvf $CWD/$PRGNAM-$VERSION-$BRANCH-$JUMBOVER.tar.xz
+
+
+cd $PRGNAM-$VERSION-$BRANCH-$JUMBOVER
+chown -R root:root .
+find -L . \
+ \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+ -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
+ -exec chmod 644 {} \;
+
+cd src 
+  sed 's|$prefix/bin|/usr/lib64/john|' -i configure.ac
+  autoreconf -fiv
+  JOHN_CFG_FULL_NAME="-DCFG_FULL_NAME='\"/etc/john/john.conf\"'"
+  JOHN_SYSTEMWIDE_FLAGS="-DJOHN_SYSTEMWIDE_EXEC='\"/usr/lib${LIBDIRSUFFIX}/john\"' -DJOHN_SYSTEMWIDE_HOME='\"/usr/share/john\"'"
+  JOHN_FLAGS="-DJOHN_SYSTEMWIDE=1 ${JOHN_SYSTEMWIDE_FLAGS} -DCPU_FALLBACK ${JOHN_CFG_FULL_NAME}"
+  CFLAGS="${CFLAGS} ${JOHN_FLAGS} -fcommon"
+  CONFIGURE_FLAGS="--prefix=/usr --disable-native-tests --enable-openmp --enable-mpi --enable-opencl --enable-pkg-config --enable-pcap"
+
+  if [[ "${ARCH}" == "x86_64" ]]; then
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS/-DCPU_FALLBACK}"
+    make clean; make
+    mv ../run/john{,-non-avx}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -mavx"
+    make clean; make
+    mv ../run/john{,-non-xop}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -mxop"
+    make clean; make
+  elif [[ "${CARCH}" == "i686" ]]; then
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS}"
+    make clean; make
+    mv ../run/john{,-non-mmx}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -mmmx"
+    make clean; make
+    mv ../run/john{,-non-sse}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -msse2"
+    make clean; make
+    mv ../run/john{,-non-avx}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -mavx"
+    make clean; make
+    mv ../run/john{,-non-xop}
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS} -mxop"
+    make clean; make
+  else
+    ./configure ${CONFIGURE_FLAGS} CFLAGS="${CFLAGS}"
+    make clean; make
+  fi
+  
+  
+  
+  
+  # config
+  cd ..
+  install -Dm 644 run/john.conf -t $PKG/etc/john
+  install -Dm 644 run/*.conf -t $PKG/usr/share/john
+
+  # opencl
+  install -Dm 644 run/kernels/* -t $PKG/usr/share/john/kernels
+
+  # completion
+  install -Dm 644 run/john.bash_completion $PKG/usr/share/bash-completion/completions/john
+  install -Dm 644 run/john.zsh_completion $PKG/usr/share/zsh/site-functions/_john
+
+  # binaries
+  install -Dm 755 run/john -t $PKG/usr/bin
+  install -Dm 755 run/john-non-* -t $PKG/usr/lib$LIBDIRSUFFIX/john||true
+  for bin in calc_stat cprepair genmkvpwd luks2john.py mkvcalcproba raw2dyna relbench tgtsnarf uaf2john wpapcap2john vncpcap2john SIPdump; do
+    install -Dm 755 run/${bin} $PKG/usr/bin/${bin/.py/}
+  done
+
+  # scripts
+  install -Dm 755 run/*.py run/*.pl run/*.rb run/{mailer,benchmark-unify} -t $PKG/usr/lib$LIBDIRSUFFIX/john
+
+  # data
+  install -Dm 644 run/*.chr run/*.lst run/dictionary* run/stats -t $PKG/usr/share/john
+  install -Dm 644 run/rules/* -t $PKG/usr/share/john/rules
+  
+  # syminks
+  cd $PKG/usr/bin
+  for link in base64conv dmg2john gpg2john hccap2john keepass2john keychain2john keyring2john keystore2john kwallet2john pfx2john putty2john pwsafe2john racf2john rar2john ssh2john unique unshadow zip2john unafs undrop truecrypt_volume2john; do
+    ln -s john $link
+  done
+  
+  mkdir -p $PKG/install
+  cat $CWD/slack-desc > $PKG/install/slack-desc
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-${VERSION}_${BRANCH}_$JUMBOVER-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
