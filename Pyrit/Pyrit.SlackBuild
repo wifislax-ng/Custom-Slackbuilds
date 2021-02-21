@@ -2,7 +2,7 @@
 
 PRGNAM=Pyrit
 VERSION=${VERSION:-0.5.1_f0f1913}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-wifislax}
 
 if [ -z "$ARCH" ]; then
