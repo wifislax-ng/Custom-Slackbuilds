@@ -113,7 +113,7 @@ zcat $CWD/grub.dejavusansmono.gfxterm.font.diff.gz | patch -p1 --verbose || exit
 zcat $CWD/0198-align-struct-efi_variable-better.patch.gz | patch -p1 --verbose || exit 1
 
 # Regenerate build system to fix dependency on outdated automake:
-autoreconf -vif
+./bootstrap
 
 build_grub() {
   EFI_DO="$*"
