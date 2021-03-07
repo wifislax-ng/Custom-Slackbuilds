@@ -10,10 +10,10 @@ routersploit: routersploit (exploitation framework)
 routersploit:
 routersploit: The RouterSploit Framework is an open-source exploitation framework
 routersploit: dedicated to embedded devices.
-routersploit:
 routersploit: It consists of three modules that aid penetration testing operations:
-routersploit:
 routersploit: exploits - modules that take advantage of identified vulnerabilities
 routersploit: creds - modules designed to test credentials against network services
 routersploit: scanners - modules that check if a target is vulnerable to any exploit
+routersploit: 
+routersploit: Homepage: https://github.com/threat9/routersploit
 routersploit:
