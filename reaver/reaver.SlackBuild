@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PRGNAM=reaver
-VERSION=${VERSION:-1.6.6_2d6e537}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-1.6.6_a3a018e}
+BUILD=${BUILD:-1}
 TAG=${TAG:-wifislax}
 
 if [ -z "$ARCH" ]; then
