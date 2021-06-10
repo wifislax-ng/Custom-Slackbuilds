@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PRGNAM=reaver
-VERSION=${VERSION:-1.6.6_a3a018e}
+VERSION=${VERSION:-1.6.6_d6c931c}
 BUILD=${BUILD:-1}
 TAG=${TAG:-wifislax}
 
