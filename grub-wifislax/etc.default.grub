@@ -27,5 +27,8 @@ GRUB_FONT=/usr/share/grub/dejavusansmono.pf2
 # Uncomment to disable generation of recovery mode menu entries
 #GRUB_DISABLE_RECOVERY="true"
 
+# Enable os-prober to find other distros
+GRUB_DISABLE_OS_PROBER="false"
+
 # Theme & Background
 GRUB_THEME=/boot/grub/themes/Wifislax/theme.txt

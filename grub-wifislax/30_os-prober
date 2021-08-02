@@ -31,7 +31,7 @@ if ! command -v os-prober > /dev/null || ! command -v linux-boot-prober > /dev/n
   exit 0
 fi
 
-X="$(cat /etc/fstab|egrep -o -m1 "^/dev/sd[a-z][0-9]|/dev/hd[a-z][0-9]|/dev/mmcblk[0-9]")"
+X="$(cat /etc/fstab|egrep -o -m1 "^/dev/sd[a-z][0-9]|/dev/hd[a-z][0-9]|/dev/mmcblk[0-9]|/dev/nvme[0-9]n[0-9]p[0-9]")"
 OSPROBED="`os-prober | grep -v "^$X" | tr ' ' '^' | paste -s -d ' '`"
 if [ -z "${OSPROBED}" ] ; then
   # empty os-prober output, nothing doing
