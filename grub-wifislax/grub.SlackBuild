@@ -4,8 +4,9 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PKGNAM=grub
 VERSION=${VERSION:-$(echo $PKGNAM-*.tar.xz | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
+# Better to use _ than ~ in the package filenames version:
 PKGVER=$(echo $VERSION | tr '~' '_')
-BUILD=${BUILD:-2wifislax}
+BUILD=${BUILD:-4wifislax}
 
 # Automatically determine the architecture we're building on:
 if [ -z "$ARCH" ]; then
@@ -73,9 +74,9 @@ cd $PKGNAM-$VERSION || exit 1
 chown -R root:root .
 find . \
   \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
-  -exec chmod 755 {} \; -o \
+  -exec chmod 755 {} \+ -o \
   \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
-  -exec chmod 644 {} \;
+  -exec chmod 644 {} \+
 
 # Use /boot/initrd.gz as a valid initrd name:
 zcat $CWD/initrd_naming.patch | patch -p1 --verbose || exit 1
@@ -85,6 +86,12 @@ zcat $CWD/grub.dejavusansmono.gfxterm.font.diff.gz | patch -p1 --verbose || exit
 
 # Fix alignment error with gcc8:
 zcat $CWD/0198-align-struct-efi_variable-better.patch.gz | patch -p1 --verbose || exit 1
+
+# Fix unreadable XFS filesystem with v4 superblock:
+zcat $CWD/a4b495520e4dc41a896a8b916a64eda9970c50ea.patch.gz | patch -p1 --verbose || exit 1
+
+# Skip processing any files in /etc/grub.d/ that end in .new:
+zcat $CWD/0001-skip-new-files-in-etc-grub.d.patch.gz | patch -p1 --verbose || exit 1
 
 # Regenerate build system to fix dependency on outdated automake:
 autoreconf -vif
