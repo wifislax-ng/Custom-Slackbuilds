@@ -4,7 +4,7 @@ PRGNAM=john
 VERSION=${VERSION:-1.9.0}
 BRANCH=jumbo
 JUMBOVER=1
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-3}
 TAG=${TAG:-wifislax}
 
 if [ -z "$ARCH" ]; then
@@ -90,29 +90,36 @@ cd src
   # opencl
   install -Dm 644 run/kernels/* -t $PKG/usr/share/john/kernels
 
-  # completion
-  install -Dm 644 run/john.bash_completion $PKG/usr/share/bash-completion/completions/john
-  install -Dm 644 run/john.zsh_completion $PKG/usr/share/zsh/site-functions/_john
-
+  # scripts
+  install -d $PKG/usr/bin $PKG/usr/lib$LIBDIRSUFFIX/john
+  install -Dm 755 run/{*.py,*.pl,*.rb,*.lua,*.js,mailer,benchmark-unify} -t $PKG/usr/lib$LIBDIRSUFFIX/john
+  for ext in lua pl rb py; do
+    for script in run/*."${ext}"; do
+      ln -sf "/usr/lib$LIBDIRSUFFIX/john/$(basename "${script}")" $PKG/usr/bin/$(basename "${script/.${ext}/}")
+    done
+  done
+  install -Dm 755 run/lib/* -t $PKG/usr/lib$LIBDIRSUFFIX/john/lib
+  
   # binaries
   install -Dm 755 run/john -t $PKG/usr/bin
   install -Dm 755 run/john-non-* -t $PKG/usr/lib$LIBDIRSUFFIX/john||true
-  for bin in calc_stat cprepair genmkvpwd luks2john.py mkvcalcproba raw2dyna relbench tgtsnarf uaf2john wpapcap2john vncpcap2john SIPdump; do
-    install -Dm 755 run/${bin} $PKG/usr/bin/${bin/.py/}
+  john_bins=(bitlocker2john calc_stat cprepair dmg2john eapmd5tojohn genmkvpwd hccap2john \
+                   keepass2john mkvcalcproba putty2john racf2john raw2dyna SIPdump uaf2john \
+                   vncpcap2john wpapcap2john)
+  for bin in "${john_bins[@]}"; do
+    install -Dm 755 "run/${bin}" -t $PKG/usr/lib$LIBDIRSUFFIX/john
+    ln -sf "/usr/lib$LIBDIRSUFFIX/john/${bin}" $PKG/usr/bin/${bin}
   done
 
-  # scripts
-  install -Dm 755 run/*.py run/*.pl run/*.rb run/{mailer,benchmark-unify} -t $PKG/usr/lib$LIBDIRSUFFIX/john
+  # symlink john
+  for link in $(find run -maxdepth 1 -type l); do
+    ln -s john $PKG/usr/bin/$(basename "${link}")
+    ln -s /usr/bin/john $PKG/usr/lib$LIBDIRSUFFIX/john/$(basename "${link}")
+  done
 
   # data
   install -Dm 644 run/*.chr run/*.lst run/dictionary* run/stats -t $PKG/usr/share/john
   install -Dm 644 run/rules/* -t $PKG/usr/share/john/rules
-  
-  # syminks
-  cd $PKG/usr/bin
-  for link in base64conv dmg2john gpg2john hccap2john keepass2john keychain2john keyring2john keystore2john kwallet2john pfx2john putty2john pwsafe2john racf2john rar2john ssh2john unique unshadow zip2john unafs undrop truecrypt_volume2john; do
-    ln -s john $link
-  done
   
   mkdir -p $PKG/install
   cat $CWD/slack-desc > $PKG/install/slack-desc
